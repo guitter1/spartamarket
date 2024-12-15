@@ -1,0 +1,10 @@
+{%extends 'base.html'%}
+{%block content%}
+<h3>로그인</h3>
+<form action="{%url 'accounts:login'%}" method="POST">
+    {%csrf_token%}
+    {{form.as_p}}
+    <button type="submit">로그인</button>
+</form>
+
+{%endblock content%}
