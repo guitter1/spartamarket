@@ -1,9 +1,11 @@
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import login as auth_login
 from django.contrib.auth import logout as auth_logout
-from django.contrib.auth.forms import AuthenticationForm
+from django.contrib.auth.forms import AuthenticationForm, UserChangeForm, PasswordChangeForm
 from django.views.decorators.http import require_http_methods, require_POST
-from .forms import CustomUserCreationForm
+from .forms import CustomUserCreationForm, CustomUserChangeForm
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth import update_session_auth_hash, get_user_model
 
 def index(request):
     return render(request, "index.html")
@@ -44,3 +46,46 @@ def delete(request):
         request.user.delete()
         auth_logout(request)
     return redirect("index")
+
+@require_http_methods(["GET", "POST"])
+def edit(request):
+    if request.method == "POST":
+        form = CustomUserChangeForm(request.POST, instance=request.user)
+        if form.is_valid():
+            form.save()
+            return redirect("index")
+    else:
+        form = UserChangeForm(instance=request.user)
+    context = {"form": form}
+    return render(request, "accounts/edit.html", context)
+
+@login_required
+@require_http_methods(["GET", "POST"])
+def change_password(request):
+    if request.method == "POST":
+        form = PasswordChangeForm(request.user, request.POST)
+        if form.is_valid():
+            form.save()
+            update_session_auth_hash(request, form.user)
+            return redirect("index")
+    else:
+        form = PasswordChangeForm(request.user)
+    context = {"form": form}
+    return render(request, "accounts/change_password.html", context)
+
+def profile(request, username):
+    member = get_object_or_404(get_user_model(), username=username)
+    context = {"member": member,}
+    return render(request, "accounts/profile.html", context)
+
+@require_POST
+def follow(request, user_id):
+    if request.user.is_authenticated:
+        member = get_object_or_404(get_user_model(), pk=user_id)
+        if request.user != member:
+            if request.user in member.followers.all():
+                member.followers.remove(request.user)
+            else:
+                member.followers.add(request.user)
+        return redirect("accounts:profile", member.username)
+    return redirect("accounts:login")
