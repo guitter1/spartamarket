@@ -12,7 +12,7 @@
     </div>
 
     <div>
-        <form action="{% url "accounts:follow" member.pk %}" method="POST">
+        <form action="{% url 'accounts:follow' member.pk %}" method="POST">
             {% csrf_token %}
             {% if user in member.followers.all %}
                 <button type="submit">언팔로우</button>
@@ -21,6 +21,32 @@
             {% endif %}
         </form>
     </div>
+
+    <p>내가 판매중인 물건: {{user.products.count}}개</p> 
+        <ul>
+            {% for product in my_products %}
+                <li>
+                    <a href="{% url 'products:product_detail' product.pk %}">
+                        {{ product.title }}
+                    </a> (작성일: {{ product.created_at }})
+                </li>
+            {% empty %}
+                <p>판매중인 물건이 없습니다.</p>
+            {% endfor %}
+        </ul>
+
+    <p>내가 찜한 물건: {{request.user.like_products.count}}개</p> 
+    <ul>
+        {% for product in like_products %}
+            <li>
+                <a href="{% url 'products:product_detail' product.pk %}">
+                    {{ product.title }}
+                </a> (작성일: {{ product.created_at }})
+            </li>
+        {% empty %}
+            <p>찜한 물건이 없습니다.</p>
+        {% endfor %}
+    </ul>
 
     <a href="/index/">홈으로 돌아가기</a>
 

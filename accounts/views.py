@@ -6,6 +6,7 @@ from django.views.decorators.http import require_http_methods, require_POST
 from .forms import CustomUserCreationForm, CustomUserChangeForm
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import update_session_auth_hash, get_user_model
+from products.models import Product 
 
 def index(request):
     return render(request, "index.html")
@@ -73,9 +74,12 @@ def change_password(request):
     context = {"form": form}
     return render(request, "accounts/change_password.html", context)
 
+@login_required
 def profile(request, username):
     member = get_object_or_404(get_user_model(), username=username)
-    context = {"member": member,}
+    my_products = Product.objects.filter(author=request.user).order_by("-created_at")
+    like_products = request.user.like_products.all().order_by("-created_at")
+    context = {"member": member, "my_products": my_products, "like_products":like_products,}
     return render(request, "accounts/profile.html", context)
 
 @require_POST
