@@ -3,7 +3,7 @@
 {% block content %}
 
     <h2>글 상세 페이지</h2>
-    <p>제목: {{ product.title }}</p>
+    <p>제목: {{ product.title }} |작성자: {{product.author.username}}</p>
     {% if product.image %}
 		<img src="{{ product.image.url }}">
     {% endif %}		
@@ -18,5 +18,27 @@
         {% csrf_token %}
         <input type="submit" value="글 삭제">
     </form>    
+
+  
+    <hr>
+    <h3>댓글</h3>
+    댓글 수:{{product.comments.count}}
+    <form action="{%url 'products:comment_create' product.pk %}" method="POST">
+        {% csrf_token %}
+        {{ comment_form.as_p }}
+        <input type="submit" value="댓글작성">
+    </form>
+    
+    <ul>
+        {% for comment in comments %}
+            <li>
+                <p>{{ comment.content }} |작성자:{{comment.author.username}}</p>
+                <form action="{%url 'products:comment_delete' comment.pk %}" method="POST">
+                  {%csrf_token%}
+                  <input type="submit" value="댓글삭제">
+                </form>
+            </li>
+        {% endfor %}
+    </ul>
 
 {% endblock content %}

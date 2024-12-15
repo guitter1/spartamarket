@@ -1,5 +1,6 @@
 from django.db import models
 from PIL import Image
+from django.conf import settings
 
 class Product(models.Model):
     title = models.CharField(max_length=50)
@@ -7,7 +8,7 @@ class Product(models.Model):
     created_at=models.DateTimeField(auto_now_add=True)
     updated_at=models.DateTimeField(auto_now=True)
     image=models.ImageField(upload_to="images/", blank=True)
-
+    author = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE,  related_name="products")
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)
 
@@ -20,3 +21,13 @@ class Product(models.Model):
 
     def __str__(self):
         return self.title
+
+class Comment(models.Model):
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name="comments")
+    content = models.CharField(max_length=300)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    author = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="comments",)
+    
+    def __str__(self):
+        return f"{self.author.username}: {self.content[:20]}"
