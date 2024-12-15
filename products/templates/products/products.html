@@ -1,13 +1,13 @@
 {% extends 'base.html' %}
 
 {% block content %}
-		<h3>상품 목록</h3>
+		<h3>상품 목록 |총 상품 수: {{product_count}}개 </h3>
         <a href="{%url 'products:new'%}">상품 등록</a>
         <ul>
             {% for product in products %}
                 <li>
                     <a href="{%url 'products:product_detail' product.id%}">
-                        <div>[{{product.id}}]{{product.title}}</div>
+                        <div>[{{product.id}}]{{product.title}} |작성자: {{product.author.username}}</div>
                     </a>
                     <br>
                 </li>
