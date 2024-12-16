@@ -1,7 +1,15 @@
 {% extends 'base.html' %}
-
+{% load static %}
 {% block content %}
     <h1>{{ member.username }}의 프로필 페이지</h1>
+    <div>
+        {%if member.image%}
+            <img src="{{member.image.url}}" width="200px">
+        {%else%}
+            <img src="{%static 'accounts/user.png'%}" width="200px">
+        {%endif%} 
+        <a href="{%url 'accounts:profile_update' member.username%}">프로필 수정하기</a>       
+    </div>
 
     <div>
         <h2>username : {{ member.username }}</h2>
