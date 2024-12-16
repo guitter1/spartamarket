@@ -3,10 +3,11 @@ from django.contrib.auth import login as auth_login
 from django.contrib.auth import logout as auth_logout
 from django.contrib.auth.forms import AuthenticationForm, UserChangeForm, PasswordChangeForm
 from django.views.decorators.http import require_http_methods, require_POST
-from .forms import CustomUserCreationForm, CustomUserChangeForm
+from .forms import CustomUserCreationForm, CustomUserChangeForm, ProfileImageForm
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import update_session_auth_hash, get_user_model
 from products.models import Product 
+
 
 def index(request):
     return render(request, "index.html")
@@ -81,6 +82,23 @@ def profile(request, username):
     like_products = request.user.like_products.all().order_by("-created_at")
     context = {"member": member, "my_products": my_products, "like_products":like_products,}
     return render(request, "accounts/profile.html", context)
+
+@login_required
+def profile_update(request, username):
+    member = get_object_or_404(get_user_model(), username=username)
+    if request.method == "POST":
+        if "reset_image" in request.POST:  
+            member.image = None
+            member.save()
+            return redirect("accounts:profile", member.username)
+        form = ProfileImageForm(request.POST, request.FILES, instance=member)
+        if form.is_valid():
+            form.save()
+            return redirect("accounts:profile", member.username)
+    else:
+        form = ProfileImageForm(instance=member)
+    context = {"member": member, "form": form}
+    return render(request, "accounts/profile_update.html", context)
 
 @require_POST
 def follow(request, user_id):
