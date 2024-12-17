@@ -1,16 +1,32 @@
 from django.shortcuts import render, redirect
 from .models import Product, Comment
-from .forms import ProductForm, CommentForm
+from .forms import ProductForm, CommentForm, OrderForm
 from django.views.decorators.http import require_http_methods, require_POST
 from django.shortcuts import get_object_or_404
 from django.contrib.auth.decorators import login_required
 from .utils import author_required
+from django.db.models import F, Count
 
 def products(request):
-    products=Product.objects.all().order_by("-pk")
-    product_count=products.count()
-    context={"products":products, "product_count":product_count}
+    products = Product.objects.annotate(like_count=Count('like_users')) 
+    product_count = products.count()
+    form = OrderForm(request.GET)
+
+    if form.is_valid():
+        category_option = form.cleaned_data.get('category', 'pk')
+    else:
+        category_option = 'pk'
+
+    if not category_option or category_option == 'pk':  
+        products = products.order_by('-pk')  
+    elif category_option == 'views':
+        products = products.order_by('-views', '-like_count')
+    elif category_option == 'like_users':
+        products = products.order_by('-like_count', '-views')
+
+    context = {"products": products, "product_count": product_count, "form": form}
     return render(request, "products/products.html", context)
+
 
 @login_required
 def new(request):
@@ -29,6 +45,7 @@ def new(request):
 
 def product_detail(request, pk):
     product=get_object_or_404(Product, pk=pk)
+    Product.objects.filter(pk=pk).update(views=F('views') + 1)
     comment_form=CommentForm()
     comments=product.comments.all().order_by("-pk")
     context={"product":product, "comment_form":comment_form, "comments":comments,}
