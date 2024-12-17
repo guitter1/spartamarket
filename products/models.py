@@ -11,6 +11,7 @@ class Product(models.Model):
     author = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE,  related_name="products")
     like_users=models.ManyToManyField(settings.AUTH_USER_MODEL, related_name="like_products")
     views = models.PositiveIntegerField(default=0) 
+    hashtags=models.ManyToManyField('Hashtag', related_name="posts")
 
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)
@@ -34,3 +35,9 @@ class Comment(models.Model):
     
     def __str__(self):
         return f"{self.author.username}: {self.content[:20]}"
+    
+class Hashtag(models.Model):
+    name = models.CharField(max_length=50, unique=True)
+
+    def __str__(self):
+        return self.name    

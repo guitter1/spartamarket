@@ -1,11 +1,12 @@
 from django.shortcuts import render, redirect
-from .models import Product, Comment
-from .forms import ProductForm, CommentForm, OrderForm
+from .models import Product, Comment, Hashtag
+from .forms import ProductForm, CommentForm, OrderForm, HashtagForm
 from django.views.decorators.http import require_http_methods, require_POST
 from django.shortcuts import get_object_or_404
 from django.contrib.auth.decorators import login_required
 from .utils import author_required
 from django.db.models import F, Count
+
 
 def products(request):
     products = Product.objects.annotate(like_count=Count('like_users')) 
@@ -34,8 +35,16 @@ def new(request):
         form = ProductForm(request.POST, request.FILES)
         if form.is_valid():
             product = form.save(commit=False)
-            product.author=request.user
+            product.author = request.user
             product.save()
+
+            hashtags_input = request.POST.get('hashtags', '')  
+            if hashtags_input:
+                hashtag_names = [tag.strip() for tag in hashtags_input.split(',')]
+                for tag_name in hashtag_names:
+                    hashtag, _ = Hashtag.objects.get_or_create(name=tag_name)
+                    product.hashtags.add(hashtag)
+
             return redirect("products:product_detail", product.id)
     else:
         form = ProductForm()
@@ -44,27 +53,42 @@ def new(request):
     return render(request, "products/new.html", context)
 
 def product_detail(request, pk):
-    product=get_object_or_404(Product, pk=pk)
+    product = get_object_or_404(Product, pk=pk)
     Product.objects.filter(pk=pk).update(views=F('views') + 1)
-    comment_form=CommentForm()
-    comments=product.comments.all().order_by("-pk")
-    context={"product":product, "comment_form":comment_form, "comments":comments,}
+    hashtag_form = HashtagForm()
+    comment_form = CommentForm()
+    comments = product.comments.all().order_by("-pk")
+    context = {
+        "product": product,
+        "comment_form": comment_form,
+        "comments": comments,
+        "hashtag_form": hashtag_form,
+    }
     return render(request, "products/product_detail.html", context)
 
 @author_required(Product)
 def edit(request, pk):
-    product = Product.objects.get(pk=pk)
+    product = get_object_or_404(Product, pk=pk)
     if request.method == "POST":
         form = ProductForm(request.POST, request.FILES, instance=product)
         if form.is_valid():
-            product = form.save()
+            product = form.save(commit=False)
+            product.save()
+
+            hashtags_input = form.cleaned_data.get('hashtags', '')
+            if hashtags_input:
+                product.hashtags.clear() 
+                hashtag_names = [tag.strip() for tag in hashtags_input.split(',') if tag.strip()]
+                for tag_name in hashtag_names:
+                    hashtag, _ = Hashtag.objects.get_or_create(name=tag_name)
+                    product.hashtags.add(hashtag) 
+
             return redirect("products:product_detail", product.pk)
     else:
-        form = ProductForm(instance=product)
-    context = {
-        "form": form,
-        "product": product,
-    }
+        existing_hashtags = ', '.join(product.hashtags.values_list('name', flat=True))
+        form = ProductForm(instance=product, initial={"hashtags": existing_hashtags})
+
+    context = {"form": form, "product": product}
     return render(request, "products/edit.html", context)
 
 @author_required(Product)
@@ -103,4 +127,15 @@ def like(request, pk):
             product.like_users.add(request.user)
     else:
         return redirect("accounts:login")
+    return redirect("products:product_detail", product.pk)
+
+@require_POST
+def hashtag(request, pk):
+    hashtag_form = HashtagForm(request.POST)
+    product = get_object_or_404(Product, pk=pk)
+    if hashtag_form.is_valid():
+        hashtag_name = hashtag_form.cleaned_data['name']
+        hashtag, _ = Hashtag.objects.get_or_create(name=hashtag_name)
+        product.hashtags.add(hashtag)
+
     return redirect("products:product_detail", product.pk)
