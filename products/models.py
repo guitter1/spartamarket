@@ -10,6 +10,7 @@ class Product(models.Model):
     image=models.ImageField(upload_to="images/", blank=True)
     author = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE,  related_name="products")
     like_users=models.ManyToManyField(settings.AUTH_USER_MODEL, related_name="like_products")
+    views = models.PositiveIntegerField(default=0) 
 
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)
