@@ -9,5 +9,14 @@
     {{ form.as_p }}
     <button type="submit">저장</button>
 </form>
+
+<form action="" method="POST">
+    {%csrf_token%}
+    {{hashtag_form.as_p}}
+    <label for="hashtags">해시태그 (쉼표로 구분해서 입력하세요):</label>
+    <input type="text" name="hashtags">
+    <input type="submit" value="해시태그추가">
+</form>
+
 <a href="{% url 'products:products' %}">목록으로</a>
 {% endblock content %}
