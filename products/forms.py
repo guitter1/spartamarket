@@ -33,3 +33,10 @@ class HashtagForm(forms.ModelForm):
     class Meta:
         model=Hashtag
         fields = "__all__"
+
+class SearchForm(forms.Form):
+    query = forms.CharField(
+        max_length=20,
+        required=False,
+        widget=forms.TextInput(attrs={'placeholder': '검색어를 입력하세요', 'class': 'form-control'})
+    )

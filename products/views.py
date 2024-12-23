@@ -1,11 +1,11 @@
 from django.shortcuts import render, redirect
 from .models import Product, Comment, Hashtag
-from .forms import ProductForm, CommentForm, OrderForm, HashtagForm
+from .forms import ProductForm, CommentForm, OrderForm, HashtagForm, SearchForm
 from django.views.decorators.http import require_http_methods, require_POST
 from django.shortcuts import get_object_or_404
 from django.contrib.auth.decorators import login_required
 from .utils import author_required
-from django.db.models import F, Count
+from django.db.models import F, Count, Q
 
 
 def products(request):
@@ -24,8 +24,22 @@ def products(request):
         products = products.order_by('-views', '-like_count')
     elif category_option == 'like_users':
         products = products.order_by('-like_count', '-views')
+    
+    search_form = SearchForm(request.GET)
+    query = None
+    if search_form.is_valid():
+        query = search_form.cleaned_data.get('query', '')
 
-    context = {"products": products, "product_count": product_count, "form": form}
+        if query:
+            products = products.filter(
+                Q(title__icontains=query) |         
+                Q(content__icontains=query) |      
+                Q(author__username__icontains=query) |  
+                Q(hashtags__name__icontains=query)  
+            ).distinct() 
+
+
+    context = {"products": products, "product_count": product_count, "form": form, "search_form":search_form}
     return render(request, "products/products.html", context)
 
 
