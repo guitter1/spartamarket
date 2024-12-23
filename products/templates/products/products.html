@@ -1,20 +1,35 @@
 {% extends 'base.html' %}
 
 {% block content %}
-		<h3>상품 목록 |총 상품 수: {{product_count}}개 </h3>
-        <a href="{%url 'products:new'%}">상품 등록</a>
-        <form action="{%url 'products:products'%}" method="GET">
-            {{form.as_p}}
-            <button type="submit">정렬</button>
-        </form>
+    <h3>상품 목록 | 총 상품 수: {{ product_count }}개</h3>
+    <a href="{% url 'products:new' %}">상품 등록</a>
+
+    <form action="{% url 'products:products' %}" method="GET">
+        {{ form.as_p }}
+        <button type="submit">정렬</button>
+    </form>
+
+    <form action="{% url 'products:products' %}" method="GET" class="search-form">
+        {{ search_form.query }}
+        <button type="submit">검색</button>
+    </form>
+
+    {% if products %}
         <ul>
             {% for product in products %}
                 <li>
-                    <a href="{%url 'products:product_detail' product.id%}">
-                        <div>[{{product.id}}]{{product.title}} |작성자: {{product.author.username}}|조회수:{{product.views}} |찜:{{product.like_users.count}}   </div>
+                    <a href="{% url 'products:product_detail' product.id %}">
+                        <div>
+                            [{{ product.id }}] {{ product.title }} |
+                            작성자: {{ product.author.username }} |
+                            조회수: {{ product.views }} |
+                            찜: {{ product.like_users.count }}
+                        </div>
                     </a>
-                    <br>
                 </li>
             {% endfor %}
-        </ul>		
+        </ul>
+    {% else %}
+        <p>검색 결과가 없습니다.</p>
+    {% endif %}
 {% endblock content %}
