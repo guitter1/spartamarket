@@ -78,4 +78,116 @@ spartamarket/
 └── README.md         # 프로젝트 설명 문서
 ```
 
+## 트러블슈팅
+<details><summary>정렬기능 사용 시 게시글 중복형성</summary>
+  products>views.py
+  기존코드:
+  ```
+  def products(request):
+    products = Product.objects.all()
+    product_count = products.count()
+    form = OrderForm(request.GET)
+
+    if form.is_valid(): 
+        category_option = form.cleaned_data.get('category', 'pk')  
+    else:
+        category_option = 'pk'  
+
+    # 정렬 조건 처리 
+    if category_option == 'views':
+        products = products.order_by('-views', '-like_users')
+    elif category_option == 'like_users':
+        products = products.order_by('-like_users', '-views')
+    elif category_option == 'pk':
+        products = products.order_by('-pk')
+
+    context = {"products": products, "product_count": product_count, "form": form}
+    return render(request, "products/products.html", context)
+
+  ```
+  수정코드:
+  ```
+  def products(request):
+    products = Product.objects.annotate(like_count=Count('like_users'))  # annotate로 like 수 계산
+    product_count = products.count()
+    form = OrderForm(request.GET)
+
+    if form.is_valid():
+        category_option = form.cleaned_data.get('category', 'pk')
+    else:
+        category_option = 'pk'
+
+    # 정렬 조건 처리
+    if category_option == 'views':
+        products = products.order_by('-views', '-like_count') 
+    elif category_option == 'like_users':
+        products = products.order_by('-like_count', '-views')  
+    elif category_option == 'pk':
+        products = products.order_by('-pk')  
+
+    context = {"products": products, "product_count": product_count, "form": form}
+    return render(request, "products/products.html", context)
+  ```
+
+</details>
+
+
+
+<details><summary>게시글 수정, 삭제 권한 확인</summary>
+  products>views.py
+  기존코드:
+  ```
+  @login_required
+  def edit(request, pk):
+    product = get_object_or_404(Product, pk=pk)
+    if product.author != request.user:
+        return HttpResponseForbidden("작성자만 수정할 수 있습니다.")
+    if request.method == "POST":
+        form = ProductForm(request.POST, request.FILES, instance=product)
+        if form.is_valid():
+            form.save()
+            return redirect("products:product_detail", product.pk)
+    else:
+        form = ProductForm(instance=product)
+    return render(request, "products/edit.html", {"form": form})
+  ```
+  문제점: 기존에 있던 그리고 앞으로 추가될 모든 수정, 삭제 코드에 저런 로직을 새로 추가해줘야 하는 문제(DRY)
+  해결방법: utils.py에 데코레이터를 만들어 저장하고 데코레이터만 import하여 사용
+
+  utils.py
+  ```
+  from functools import wraps
+  from django.http import HttpResponseForbidden
+  from django.shortcuts import get_object_or_404
+
+  def author_required(model, lookup_field="pk"):
+    def decorator(view_func):
+        @wraps(view_func)
+        def _wrapped_view(request, *args, **kwargs):
+            obj = get_object_or_404(model, **{lookup_field: kwargs[lookup_field]})
+            if obj.author != request.user:
+                return HttpResponseForbidden("작성자만 접근할 수 있습니다.")
+            return view_func(request, *args, **kwargs)
+        return _wrapped_view
+    return decorator
+  ```
+  views.py
+  ```
+  from .models import Product, Comment
+  from .utils import author_required
+
+  @login_required
+  @author_required(Product)
+  def edit(request, pk):
+    product = get_object_or_404(Product, pk=pk)
+    if request.method == "POST":
+        form = ProductForm(request.POST, request.FILES, instance=product)
+        if form.is_valid():
+            form.save()
+            return redirect("products:product_detail", product.pk)
+    else:
+        form = ProductForm(instance=product)
+    return render(request, "products/edit.html", {"form": form})
+  ```
+</details>
 
