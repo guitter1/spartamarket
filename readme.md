@@ -58,7 +58,7 @@ http://127.0.0.1:8000/으로 접속
 ---
 ## ERD
 
-![ERD](spartamarket diagram.jpg)
+![ERD](spartamarket_diagram.jpg)
 
 ---
 
