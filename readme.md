@@ -81,6 +81,7 @@ spartamarket/
 ## 트러블슈팅
 <details><summary>정렬기능 사용 시 게시글 중복형성</summary>
   products>views.py
+
   기존코드:
   ```
   def products(request):
@@ -136,6 +137,7 @@ spartamarket/
 <details><summary>게시글 수정, 삭제 권한 확인</summary>
   products>views.py
   기존코드:
+  
   ```
   @login_required
   def edit(request, pk):
@@ -190,4 +192,3 @@ spartamarket/
     return render(request, "products/edit.html", {"form": form})
   ```
 </details>
-
